@@ -1,22 +1,58 @@
 package com.darekbx.notebookcheckreader.ui.news
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.darekbx.notebookcheckreader.model.RssItem
+import com.darekbx.notebookcheckreader.repository.DateTimeParser
+import com.darekbx.notebookcheckreader.ui.theme.NotebookcheckReaderTheme
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -31,13 +67,15 @@ fun News(viewModel: NewsViewModel = koinViewModel()) {
         when (val state = uiState) {
             is NewsUiState.Loading -> LoadingSpinner()
             is NewsUiState.Error -> ErrorMessage(state.message)
-            is NewsUiState.Success -> Content(state.items)
+            is NewsUiState.Success -> Content(state.items) { visibleItems ->
+                viewModel.markAsRead(visibleItems.toList())
+            }
         }
     }
 }
 
 @Composable
-private fun Content(rssItems: List<RssItem>) {
+private fun Content(rssItems: List<RssItem>, markVisibleItems: (Set<String>) -> Unit = {}) {
     if (rssItems.isEmpty()) {
         Text(
             text = "No items available",
@@ -45,10 +83,141 @@ private fun Content(rssItems: List<RssItem>) {
         )
         return
     }
-    LazyColumn(Modifier.fillMaxWidth()) {
-        items(rssItems) { item ->
-            Text(item.title)
+
+    val lazyState = rememberLazyGridState()
+
+    LaunchedEffect(lazyState) {
+        snapshotFlow { lazyState.layoutInfo.visibleItemsInfo.map { it.key as String }.toSet() }
+            .distinctUntilChanged()
+            .collect { items -> markVisibleItems(items) }
+    }
+
+    LazyVerticalGrid(
+        state = lazyState,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, end = 4.dp),
+        columns = GridCells.Fixed(1),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        itemsIndexed(rssItems, key = { _, item -> item.localId }) { index, item ->
+            ListItem(item, index)
         }
+    }
+}
+
+@Composable
+private fun ListItem(item: RssItem, index: Int = 0) {
+    Card(
+        modifier = Modifier
+            .padding(4.dp)
+            .padding(top = if (index == 0) 16.dp else 0.dp)
+            .padding(start = 32.dp, end = 32.dp)
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(8.dp),
+    ) {
+        Box(Modifier.fillMaxWidth()) {
+            Image(item)
+            TitleDate(item)
+            FavouriteIcon { isFavourite -> /* TODO */ }
+            ReadMark(item)
+        }
+    }
+}
+
+@Composable
+private fun Image(item: RssItem) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(item.enclosure)
+            .crossfade(true)
+            .build(),
+        contentDescription = item.title,
+        contentScale = ContentScale.FillWidth,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(175.dp)
+            .clip(RoundedCornerShape(8.dp))
+    )
+}
+
+@Composable
+private fun BoxScope.TitleDate(item: RssItem) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.Black.copy(alpha = 0.7f))
+            .padding(start = 8.dp, end = 8.dp, top = 4.dp)
+            .align(Alignment.BottomStart)
+    ) {
+        Text(
+            modifier = Modifier,
+            maxLines = 2,
+            lineHeight = 12.sp,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onPrimary,
+            text = item.title,
+            style = MaterialTheme.typography.labelSmall,
+        )
+        Text(
+            modifier = Modifier,
+            color = MaterialTheme.colorScheme.onPrimary,
+            text = DateTimeParser.formatTimestamp(item.timestamp),
+            fontSize = 10.sp,
+        )
+    }
+}
+
+@Composable
+private fun BoxScope.ReadMark(item: RssItem) {
+    if (item.isRead) {
+        Text(
+            "Read",
+            modifier = Modifier
+                .absoluteOffset(x = 58.dp, y = 8.dp)
+                .padding(2.dp)
+                .align(Alignment.TopEnd)
+                .rotate(45F)
+                .background(
+                    color = Color(0x990033CC),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .padding(start = 64.dp, end = 64.dp),
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onPrimary
+        )
+    }
+}
+
+@Composable
+private fun BoxScope.FavouriteIcon(onFavouriteChanged: (Boolean) -> Unit = {}) {
+    var isFavourite by remember { mutableStateOf(false) }
+    Box(
+        Modifier
+            .clickable {
+                isFavourite = !isFavourite
+                onFavouriteChanged(isFavourite)
+            }
+            .padding(8.dp)
+            .align(Alignment.TopStart)
+            .size(24.dp)
+    ) {
+        val icon = if (isFavourite) {
+            Icons.Default.Favorite
+        } else {
+            Icons.Default.FavoriteBorder
+        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.scale(1.25F),
+            tint = Color.White
+        )
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier
+        )
     }
 }
 
@@ -65,3 +234,30 @@ private fun ErrorMessage(message: String) {
         style = MaterialTheme.typography.bodySmall,
     )
 }
+
+@Preview
+@Composable
+private fun ItemPreview() {
+    NotebookcheckReaderTheme {
+        Content(
+            listOf(
+                rssItem.copy().apply {
+                    localId = "1"
+                    isRead = true
+                },
+                rssItem.copy().apply { localId = "2" },
+                rssItem.copy().apply { localId = "3" },
+                rssItem.copy().apply { localId = "4" }
+            )
+        )
+    }
+}
+
+private val rssItem = RssItem(
+    title = "Valve denies Steam data breach, says accounts are secure, Valve denies Steam data breach, says accounts are secure",
+    link = "https://www.notebookcheck.net/Valve-denies-Steam-data-breach-says-accounts-are-secure.1016732.0.html",
+    description = "Valve has confirmed that recent leaks and rumors about 89 million Steam accounts allegedly hacked are false. The company clarified that it has examined a sample of the leak and that user accounts were secure and unaffected.",
+    category = "news",
+    timestamp = System.currentTimeMillis() / 1000,
+    enclosure = "https://www.notebookcheck.net/fileadmin/Notebooks/News/_nc4/Valve-denies-Steam-Data-Breach.jpg"
+)

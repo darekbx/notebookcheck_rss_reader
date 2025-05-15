@@ -3,6 +3,7 @@ package com.darekbx.notebookcheckreader.ui.news
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darekbx.notebookcheckreader.domain.FetchRssItemsUseCase
+import com.darekbx.notebookcheckreader.domain.MarkReadItemsUseCase
 import com.darekbx.notebookcheckreader.model.RssItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +17,8 @@ sealed interface NewsUiState {
 }
 
 class NewsViewModel(
-    private val fetchRssItemsUseCase: FetchRssItemsUseCase
+    private val fetchRssItemsUseCase: FetchRssItemsUseCase,
+    private val markReadItemsUseCase: MarkReadItemsUseCase
 ): ViewModel() {
     private val _uiState = MutableStateFlow<NewsUiState>(NewsUiState.Loading)
     val uiState: StateFlow<NewsUiState> = _uiState.asStateFlow()
@@ -30,6 +32,12 @@ class NewsViewModel(
             } catch (e: Exception) {
                 _uiState.emit(NewsUiState.Error(e.message ?: "Unknown error"))
             }
+        }
+    }
+
+    fun markAsRead(items: List<String>) {
+        viewModelScope.launch {
+            markReadItemsUseCase(items)
         }
     }
 }

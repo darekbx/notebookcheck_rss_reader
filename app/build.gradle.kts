@@ -69,6 +69,7 @@ dependencies {
 
     // Coil
     implementation(libs.coil)
+    implementation(libs.coil.network)
 
     // Work
     implementation(libs.work)

@@ -5,8 +5,9 @@ data class RssItem(
     val link: String,
     val description: String,
     val category: String,
-    val pubDate: String,
+    val timestamp: Long,
     val enclosure: String
 ) {
+    var localId: String = ""
     var isRead: Boolean = false
 }

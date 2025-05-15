@@ -10,10 +10,22 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.darekbx.notebookcheckreader.navigation.AppNavHost
@@ -31,12 +43,36 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             NotebookcheckReaderTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
+                    Surface(shadowElevation = 4.dp) {
+                        TopAppBar(
+                            title = { Text("Notebookcheck") },
+                            colors = TopAppBarDefaults.topAppBarColors(),
+                            actions = {
+                                Row {
+                                    IconButton(onClick = { }) {
+                                        Icon(
+                                            imageVector = Icons.Default.FavoriteBorder,
+                                            contentDescription = "Favourites"
+                                        )
+                                    }
+                                    IconButton(onClick = { }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Refresh,
+                                            contentDescription = "Refresh"
+                                        )
+                                    }
+                                }
+                            })
+                    }
+
+                }) { innerPadding ->
                     val navController = rememberNavController()
                     AppNavHost(navController, modifier = Modifier.padding(innerPadding))
                 }
@@ -51,7 +87,10 @@ class MainActivity : ComponentActivity() {
     private fun requestNotificationPermission() {
         val permission = android.Manifest.permission.POST_NOTIFICATIONS
         when {
-            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED -> {
+            ContextCompat.checkSelfPermission(
+                this,
+                permission
+            ) == PackageManager.PERMISSION_GRANTED -> {
             }
 
             shouldShowRequestPermissionRationale(permission) -> {

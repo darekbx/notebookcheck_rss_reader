@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.room.Room
 import com.darekbx.notebookcheckreader.domain.FetchRssItemsUseCase
+import com.darekbx.notebookcheckreader.domain.MarkReadItemsUseCase
 import com.darekbx.notebookcheckreader.domain.SynchronizeUseCase
 import com.darekbx.notebookcheckreader.worker.KoinWorkerFactory
 import com.darekbx.notebookcheckreader.repository.RssNotificationManager
@@ -55,8 +56,9 @@ val appModule = module {
 val domainModule = module {
     single { SynchronizeUseCase(get(), get(), get(named("feed_url"))) }
     single { FetchRssItemsUseCase(get()) }
+    single { MarkReadItemsUseCase(get()) }
 }
 
 val viewModelModule = module {
-     viewModel { NewsViewModel(get()) }
+     viewModel { NewsViewModel(get(), get()) }
 }

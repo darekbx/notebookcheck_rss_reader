@@ -8,18 +8,19 @@ fun RssItem.toDto() = RssItemDto(
     link = this.link,
     description = this.description,
     category = this.category,
-    pubDate = this.pubDate,
+    timestamp = this.timestamp,
     enclosure = this.enclosure,
     isRead = false
 )
 
 fun RssItemDto.toModel() = RssItem(
-    title = this.title,
-    link = this.link,
-    description = this.description,
-    category = this.category,
-    pubDate = this.pubDate,
-    enclosure = this.enclosure
+    title = this@toModel.title,
+    link = this@toModel.link,
+    description = this@toModel.description,
+    category = this@toModel.category,
+    timestamp = this@toModel.timestamp,
+    enclosure = this@toModel.enclosure
 ).apply {
-    isRead = this.isRead
+    localId = this@toModel.id
+    isRead = this@toModel.isRead
 }

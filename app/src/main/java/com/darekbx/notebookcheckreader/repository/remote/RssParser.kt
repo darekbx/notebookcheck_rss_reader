@@ -4,6 +4,7 @@ import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 
 import com.darekbx.notebookcheckreader.model.RssItem
+import com.darekbx.notebookcheckreader.repository.DateTimeParser
 
 class RssParser {
 
@@ -78,7 +79,7 @@ class RssParser {
             link = link,
             description = description,
             category = category,
-            pubDate = pubDate,
+            timestamp = DateTimeParser.getTimestamp(this.pubDate),
             enclosure = enclosure
         )
     }

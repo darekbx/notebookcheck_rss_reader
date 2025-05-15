@@ -12,7 +12,7 @@ data class RssItemDto(
     val link: String,
     val description: String,
     val category: String,
-    @ColumnInfo(name = "pub_data") val pubDate: String,
+    @ColumnInfo(name = "timestamp") val timestamp: Long,
     val enclosure: String,
     val isRead: Boolean = false,
 )
