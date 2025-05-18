@@ -4,15 +4,20 @@ import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
 import androidx.room.Room
+import com.darekbx.notebookcheckreader.domain.AddRemoveToFavouritesUseCase
 import com.darekbx.notebookcheckreader.domain.FetchRssItemsUseCase
 import com.darekbx.notebookcheckreader.domain.MarkReadItemsUseCase
 import com.darekbx.notebookcheckreader.domain.SynchronizeUseCase
+import com.darekbx.notebookcheckreader.repository.RefreshBus
 import com.darekbx.notebookcheckreader.worker.KoinWorkerFactory
 import com.darekbx.notebookcheckreader.repository.RssNotificationManager
 import com.darekbx.notebookcheckreader.repository.local.AppDatabase
+import com.darekbx.notebookcheckreader.repository.local.AppDatabase.Companion.MIGRATION_1_2
+import com.darekbx.notebookcheckreader.repository.local.FavouritesDao
 import com.darekbx.notebookcheckreader.repository.local.RssDao
 import com.darekbx.notebookcheckreader.repository.remote.RssFetch
 import com.darekbx.notebookcheckreader.repository.remote.RssParser
+import com.darekbx.notebookcheckreader.ui.MainViewModel
 import com.darekbx.notebookcheckreader.ui.news.NewsViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -37,15 +42,18 @@ val appModule = module {
         }
     }
     single { RssParser() }
+    single { RefreshBus() }
     factory { RssFetch(get(), get()) }
 
     // Local storage
     single<AppDatabase> {
         Room
             .databaseBuilder(get<Application>(), AppDatabase::class.java, AppDatabase.DB_NAME)
+            .addMigrations(MIGRATION_1_2)
             .build()
     }
     single<RssDao> { get<AppDatabase>().rssDao() }
+    single<FavouritesDao> { get<AppDatabase>().favouritesDao() }
 
     // Others
     single { androidContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
@@ -54,11 +62,13 @@ val appModule = module {
 }
 
 val domainModule = module {
-    single { SynchronizeUseCase(get(), get(), get(named("feed_url"))) }
-    single { FetchRssItemsUseCase(get()) }
+    single { SynchronizeUseCase(get(), get(), get(named("feed_url")), get()) }
+    single { FetchRssItemsUseCase(get(), get()) }
     single { MarkReadItemsUseCase(get()) }
+    single { AddRemoveToFavouritesUseCase(get()) }
 }
 
 val viewModelModule = module {
-     viewModel { NewsViewModel(get(), get()) }
+     viewModel { NewsViewModel(get(), get(), get(), get()) }
+     viewModel { MainViewModel(get()) }
 }

@@ -37,10 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,6 +60,7 @@ fun News(viewModel: NewsViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
+        viewModel.listenForChanges()
         viewModel.fetch()
     }
 
@@ -67,15 +68,21 @@ fun News(viewModel: NewsViewModel = koinViewModel()) {
         when (val state = uiState) {
             is NewsUiState.Loading -> LoadingSpinner()
             is NewsUiState.Error -> ErrorMessage(state.message)
-            is NewsUiState.Success -> Content(state.items) { visibleItems ->
-                viewModel.markAsRead(visibleItems.toList())
-            }
+            is NewsUiState.Success -> Content(
+                rssItems = state.items,
+                markVisibleItems = { visibleItems -> viewModel.markAsRead(visibleItems.toList()) },
+                onFavouriteChanged = { itemId -> viewModel.markFavourite(itemId) }
+            )
         }
     }
 }
 
 @Composable
-private fun Content(rssItems: List<RssItem>, markVisibleItems: (Set<String>) -> Unit = {}) {
+private fun Content(
+    rssItems: List<RssItem>,
+    markVisibleItems: (Set<String>) -> Unit = {},
+    onFavouriteChanged: (String) -> Unit = {}
+) {
     if (rssItems.isEmpty()) {
         Text(
             text = "No items available",
@@ -101,13 +108,14 @@ private fun Content(rssItems: List<RssItem>, markVisibleItems: (Set<String>) -> 
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         itemsIndexed(rssItems, key = { _, item -> item.localId }) { index, item ->
-            ListItem(item, index)
+            ListItem(item, index) { onFavouriteChanged(item.localId) }
         }
     }
 }
 
 @Composable
-private fun ListItem(item: RssItem, index: Int = 0) {
+private fun ListItem(item: RssItem, index: Int = 0, onFavouriteChanged: () -> Unit = {}) {
+    val uriHandler = LocalUriHandler.current
     Card(
         modifier = Modifier
             .padding(4.dp)
@@ -116,10 +124,12 @@ private fun ListItem(item: RssItem, index: Int = 0) {
             .fillMaxWidth(),
         elevation = CardDefaults.cardElevation(8.dp),
     ) {
-        Box(Modifier.fillMaxWidth()) {
+        Box(Modifier
+            .fillMaxWidth()
+            .clickable { uriHandler.openUri(item.link) }) {
             Image(item)
             TitleDate(item)
-            FavouriteIcon { isFavourite -> /* TODO */ }
+            FavouriteIcon(item.isFavourite) { onFavouriteChanged() }
             ReadMark(item)
         }
     }
@@ -133,10 +143,10 @@ private fun Image(item: RssItem) {
             .crossfade(true)
             .build(),
         contentDescription = item.title,
-        contentScale = ContentScale.FillWidth,
+        contentScale = ContentScale.Crop,
         modifier = Modifier
             .fillMaxWidth()
-            .height(175.dp)
+            .height(200.dp)
             .clip(RoundedCornerShape(8.dp))
     )
 }
@@ -190,13 +200,13 @@ private fun BoxScope.ReadMark(item: RssItem) {
 }
 
 @Composable
-private fun BoxScope.FavouriteIcon(onFavouriteChanged: (Boolean) -> Unit = {}) {
-    var isFavourite by remember { mutableStateOf(false) }
+private fun BoxScope.FavouriteIcon(isFavourite: Boolean,  onFavouriteChanged: () -> Unit = {}) {
+    var isFavourite by remember { mutableStateOf(isFavourite) }
     Box(
         Modifier
             .clickable {
                 isFavourite = !isFavourite
-                onFavouriteChanged(isFavourite)
+                onFavouriteChanged()
             }
             .padding(8.dp)
             .align(Alignment.TopStart)
@@ -207,12 +217,6 @@ private fun BoxScope.FavouriteIcon(onFavouriteChanged: (Boolean) -> Unit = {}) {
         } else {
             Icons.Default.FavoriteBorder
         }
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.scale(1.25F),
-            tint = Color.White
-        )
         Icon(
             imageVector = icon,
             contentDescription = null,

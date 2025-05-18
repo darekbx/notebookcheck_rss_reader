@@ -10,12 +10,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,12 +28,20 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.darekbx.notebookcheckreader.navigation.AppNavHost
+import com.darekbx.notebookcheckreader.ui.MainUiState
+import com.darekbx.notebookcheckreader.ui.MainViewModel
 import com.darekbx.notebookcheckreader.ui.theme.NotebookcheckReaderTheme
+import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -49,37 +61,67 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NotebookcheckReaderTheme {
-                Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
-                    Surface(shadowElevation = 4.dp) {
-                        TopAppBar(
-                            title = { Text("Notebookcheck") },
-                            colors = TopAppBarDefaults.topAppBarColors(),
-                            actions = {
-                                Row {
-                                    IconButton(onClick = { }) {
-                                        Icon(
-                                            imageVector = Icons.Default.FavoriteBorder,
-                                            contentDescription = "Favourites"
-                                        )
-                                    }
-                                    IconButton(onClick = { }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Refresh,
-                                            contentDescription = "Refresh"
-                                        )
-                                    }
-                                }
-                            })
-                    }
+                val mainViewModel = koinViewModel<MainViewModel>()
+                val state by mainViewModel.uiState.collectAsStateWithLifecycle()
 
+                Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
+                    AppBar(onSyncClick = { mainViewModel.synchronize() })
                 }) { innerPadding ->
-                    val navController = rememberNavController()
-                    AppNavHost(navController, modifier = Modifier.padding(innerPadding))
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    ) {
+                        val navController = rememberNavController()
+                        AppNavHost(navController, modifier = Modifier)
+
+                        if (state is MainUiState.Loading) {
+                            LoadingBox()
+                        }
+                    }
                 }
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestNotificationPermission()
+        }
+    }
+
+    @Composable
+    private fun LoadingBox() {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.75F)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(Modifier.size(64.dp))
+        }
+    }
+
+    @Composable
+    @OptIn(ExperimentalMaterial3Api::class)
+    private fun AppBar(onSyncClick: () -> Unit = {}) {
+        Surface(shadowElevation = 4.dp) {
+            TopAppBar(
+                title = { Text("Notebookcheck") },
+                colors = TopAppBarDefaults.topAppBarColors(),
+                actions = {
+                    Row {
+                        IconButton(onClick = { }) {
+                            Icon(
+                                imageVector = Icons.Default.FavoriteBorder,
+                                contentDescription = "Favourites"
+                            )
+                        }
+                        IconButton(onClick = onSyncClick) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh"
+                            )
+                        }
+                    }
+                })
         }
     }
 

@@ -10,4 +10,5 @@ data class RssItem(
 ) {
     var localId: String = ""
     var isRead: Boolean = false
+    var isFavourite: Boolean = false
 }

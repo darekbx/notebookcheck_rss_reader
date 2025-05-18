@@ -1,5 +1,6 @@
 package com.darekbx.notebookcheckreader.domain
 
+import com.darekbx.notebookcheckreader.repository.RefreshBus
 import com.darekbx.notebookcheckreader.repository.local.RssDao
 import com.darekbx.notebookcheckreader.repository.remote.RssFetch
 import com.darekbx.notebookcheckreader.repository.toDto
@@ -7,7 +8,8 @@ import com.darekbx.notebookcheckreader.repository.toDto
 class SynchronizeUseCase(
     private val rssFetch: RssFetch,
     private val rssDao: RssDao,
-    private val feedUrl: String
+    private val feedUrl: String,
+    private val refreshBus: RefreshBus
 )  {
 
     /**
@@ -31,6 +33,9 @@ class SynchronizeUseCase(
 
         // 4. Save new items to the database
         rssDao.addAll(newItems.map { it.toDto() })
+
+        // 5. Notify listeners that data has changed
+        refreshBus.notifyChanged()
 
         return newItems.size
     }
