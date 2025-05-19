@@ -110,7 +110,7 @@ class MainActivity : ComponentActivity() {
                 .background(Color.Black.copy(alpha = 0.75F)),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(Modifier.size(64.dp))
+            CircularProgressIndicator(Modifier.size(64.dp), color = Color.White)
         }
     }
 

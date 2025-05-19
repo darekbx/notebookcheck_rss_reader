@@ -63,7 +63,7 @@ val appModule = module {
 }
 
 val domainModule = module {
-    single { SynchronizeUseCase(get(), get(), get(named("feed_url")), get()) }
+    single { SynchronizeUseCase(get(), get(), get(named("feed_url"))) }
     single { FetchRssItemsUseCase(get(), get()) }
     single { FetchFavouriteItemsUseCase(get(), get()) }
     single { MarkReadItemsUseCase(get()) }
