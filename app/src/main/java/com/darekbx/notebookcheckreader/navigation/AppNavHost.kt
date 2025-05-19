@@ -25,5 +25,9 @@ fun AppNavHost(
         composable(route = ToReadDestination.route) {
             Favourites()
         }
+        
+        composable(route = FavouritesDestination.route) {
+            Favourites()
+        }
     }
 }

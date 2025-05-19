@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FavouritesDao {
@@ -19,4 +20,7 @@ interface FavouritesDao {
 
     @Query("SELECT * FROM favourite_items")
     suspend fun fetch(): List<FavouriteItemDto>
+
+    @Query("SELECT COUNT(*) FROM favourite_items")
+    fun fetchCount(): Flow<Int>
 }

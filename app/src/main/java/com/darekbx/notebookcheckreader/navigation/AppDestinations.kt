@@ -11,3 +11,7 @@ object NewsDestination : AppDestinations {
 object ToReadDestination : AppDestinations {
     override val route = "to_read"
 }
+
+object FavouritesDestination : AppDestinations {
+    override val route = "favourites"
+}

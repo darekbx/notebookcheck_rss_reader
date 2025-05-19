@@ -5,10 +5,11 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.room.Room
 import com.darekbx.notebookcheckreader.domain.AddRemoveToFavouritesUseCase
+import com.darekbx.notebookcheckreader.domain.FetchFavouriteItemsUseCase
+import com.darekbx.notebookcheckreader.domain.FetchFavouritesCountUseCase
 import com.darekbx.notebookcheckreader.domain.FetchRssItemsUseCase
 import com.darekbx.notebookcheckreader.domain.MarkReadItemsUseCase
 import com.darekbx.notebookcheckreader.domain.SynchronizeUseCase
-import com.darekbx.notebookcheckreader.repository.RefreshBus
 import com.darekbx.notebookcheckreader.worker.KoinWorkerFactory
 import com.darekbx.notebookcheckreader.repository.RssNotificationManager
 import com.darekbx.notebookcheckreader.repository.local.AppDatabase
@@ -18,6 +19,7 @@ import com.darekbx.notebookcheckreader.repository.local.RssDao
 import com.darekbx.notebookcheckreader.repository.remote.RssFetch
 import com.darekbx.notebookcheckreader.repository.remote.RssParser
 import com.darekbx.notebookcheckreader.ui.MainViewModel
+import com.darekbx.notebookcheckreader.ui.favourites.FavouritesViewModel
 import com.darekbx.notebookcheckreader.ui.news.NewsViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -42,7 +44,6 @@ val appModule = module {
         }
     }
     single { RssParser() }
-    single { RefreshBus() }
     factory { RssFetch(get(), get()) }
 
     // Local storage
@@ -64,11 +65,14 @@ val appModule = module {
 val domainModule = module {
     single { SynchronizeUseCase(get(), get(), get(named("feed_url")), get()) }
     single { FetchRssItemsUseCase(get(), get()) }
+    single { FetchFavouriteItemsUseCase(get(), get()) }
     single { MarkReadItemsUseCase(get()) }
     single { AddRemoveToFavouritesUseCase(get()) }
+    single { FetchFavouritesCountUseCase(get()) }
 }
 
 val viewModelModule = module {
-     viewModel { NewsViewModel(get(), get(), get(), get()) }
-     viewModel { MainViewModel(get()) }
+     viewModel { NewsViewModel(get(), get(), get()) }
+     viewModel { MainViewModel(get(), get()) }
+     viewModel { FavouritesViewModel(get(), get()) }
 }

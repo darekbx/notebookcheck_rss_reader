@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.absoluteOffset
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,13 +21,13 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,24 +56,12 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun News(viewModel: NewsViewModel = koinViewModel()) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    LaunchedEffect(Unit) {
-        viewModel.listenForChanges()
-        viewModel.fetch()
-    }
-
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        when (val state = uiState) {
-            is NewsUiState.Loading -> LoadingSpinner()
-            is NewsUiState.Error -> ErrorMessage(state.message)
-            is NewsUiState.Success -> Content(
-                rssItems = state.items,
-                markVisibleItems = { visibleItems -> viewModel.markAsRead(visibleItems.toList()) },
-                onFavouriteChanged = { itemId -> viewModel.markFavourite(itemId) }
-            )
-        }
-    }
+    val items by viewModel.itemsFlow().collectAsStateWithLifecycle(emptyList())
+    Content(
+        rssItems = items,
+        markVisibleItems = { visibleItems -> viewModel.markAsRead(visibleItems.toList()) },
+        onFavouriteChanged = { itemId -> viewModel.markFavourite(itemId) }
+    )
 }
 
 @Composable
@@ -92,11 +79,19 @@ private fun Content(
     }
 
     val lazyState = rememberLazyGridState()
+    var previousItemCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(lazyState) {
         snapshotFlow { lazyState.layoutInfo.visibleItemsInfo.map { it.key as String }.toSet() }
             .distinctUntilChanged()
             .collect { items -> markVisibleItems(items) }
+    }
+
+    LaunchedEffect(rssItems.size) {
+        if (rssItems.size > previousItemCount && previousItemCount > 0) {
+            lazyState.animateScrollToItem(0)
+        }
+        previousItemCount = rssItems.size
     }
 
     LazyVerticalGrid(
@@ -114,7 +109,7 @@ private fun Content(
 }
 
 @Composable
-private fun ListItem(item: RssItem, index: Int = 0, onFavouriteChanged: () -> Unit = {}) {
+fun ListItem(item: RssItem, index: Int = 0, onFavouriteChanged: () -> Unit = {}) {
     val uriHandler = LocalUriHandler.current
     Card(
         modifier = Modifier
@@ -223,20 +218,6 @@ private fun BoxScope.FavouriteIcon(isFavourite: Boolean,  onFavouriteChanged: ()
             modifier = Modifier
         )
     }
-}
-
-@Composable
-private fun LoadingSpinner() {
-    CircularProgressIndicator(Modifier.size(64.dp))
-}
-
-@Composable
-private fun ErrorMessage(message: String) {
-    Text(
-        text = message,
-        color = MaterialTheme.colorScheme.error,
-        style = MaterialTheme.typography.bodySmall,
-    )
 }
 
 @Preview

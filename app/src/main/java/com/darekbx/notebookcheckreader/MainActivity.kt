@@ -13,9 +13,12 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
@@ -23,6 +26,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,14 +37,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.darekbx.notebookcheckreader.navigation.AppNavHost
+import com.darekbx.notebookcheckreader.navigation.FavouritesDestination
 import com.darekbx.notebookcheckreader.ui.MainUiState
 import com.darekbx.notebookcheckreader.ui.MainViewModel
 import com.darekbx.notebookcheckreader.ui.theme.NotebookcheckReaderTheme
+import org.koin.androidx.compose.KoinAndroidContext
 import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
@@ -60,23 +68,30 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            NotebookcheckReaderTheme {
-                val mainViewModel = koinViewModel<MainViewModel>()
-                val state by mainViewModel.uiState.collectAsStateWithLifecycle()
+            KoinAndroidContext {
+                NotebookcheckReaderTheme {
+                    val navController = rememberNavController()
+                    val mainViewModel = koinViewModel<MainViewModel>()
+                    val state by mainViewModel.uiState.collectAsStateWithLifecycle()
+                    val favouritesCount by mainViewModel.favouritesCount().collectAsStateWithLifecycle(initialValue = 0)
 
-                Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
-                    AppBar(onSyncClick = { mainViewModel.synchronize() })
-                }) { innerPadding ->
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    ) {
-                        val navController = rememberNavController()
-                        AppNavHost(navController, modifier = Modifier)
+                    Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
+                        AppBar(
+                            favouritesCount = favouritesCount,
+                            onSyncClick = { mainViewModel.synchronize() },
+                            onFavouritesClick = { navController.navigate(FavouritesDestination.route) }
+                        )
+                    }) { innerPadding ->
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
+                        ) {
+                            AppNavHost(navController, modifier = Modifier)
 
-                        if (state is MainUiState.Loading) {
-                            LoadingBox()
+                            if (state is MainUiState.Loading) {
+                                LoadingBox()
+                            }
                         }
                     }
                 }
@@ -101,24 +116,49 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     @OptIn(ExperimentalMaterial3Api::class)
-    private fun AppBar(onSyncClick: () -> Unit = {}) {
+    private fun AppBar(favouritesCount: Int, onSyncClick: () -> Unit = {}, onFavouritesClick: () -> Unit = {}) {
         Surface(shadowElevation = 4.dp) {
             TopAppBar(
                 title = { Text("Notebookcheck") },
                 colors = TopAppBarDefaults.topAppBarColors(),
                 actions = {
                     Row {
-                        IconButton(onClick = { }) {
-                            Icon(
-                                imageVector = Icons.Default.FavoriteBorder,
-                                contentDescription = "Favourites"
-                            )
+                        Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+                            IconButton(onClick = onFavouritesClick) {
+                                Icon(
+                                    imageVector = Icons.Default.FavoriteBorder,
+                                    contentDescription = "Favourites"
+                                )
+                            }
+                            if (favouritesCount > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            MaterialTheme.colorScheme.error,
+                                            CircleShape
+                                        )
+                                        .size(18.dp)
+                                        .aspectRatio(1F)
+                                        .align(Alignment.BottomStart),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "$favouritesCount",
+                                        textAlign = TextAlign.Center,
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        modifier = Modifier.absoluteOffset(y = -3.dp)
+                                    )
+                                }
+                            }
                         }
-                        IconButton(onClick = onSyncClick) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Refresh"
-                            )
+                        Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+                            IconButton(onClick = onSyncClick) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Refresh"
+                                )
+                            }
                         }
                     }
                 })
