@@ -74,9 +74,11 @@ class MainActivity : ComponentActivity() {
                     val mainViewModel = koinViewModel<MainViewModel>()
                     val state by mainViewModel.uiState.collectAsStateWithLifecycle()
                     val favouritesCount by mainViewModel.favouritesCount().collectAsStateWithLifecycle(initialValue = 0)
+                    val itemsCount by mainViewModel.itemsCount().collectAsStateWithLifecycle(initialValue = 0)
 
                     Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
                         AppBar(
+                            itemsCount = itemsCount,
                             favouritesCount = favouritesCount,
                             onSyncClick = { mainViewModel.synchronize() },
                             onFavouritesClick = { navController.navigate(FavouritesDestination.route) }
@@ -116,10 +118,10 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     @OptIn(ExperimentalMaterial3Api::class)
-    private fun AppBar(favouritesCount: Int, onSyncClick: () -> Unit = {}, onFavouritesClick: () -> Unit = {}) {
+    private fun AppBar(itemsCount: Int, favouritesCount: Int, onSyncClick: () -> Unit = {}, onFavouritesClick: () -> Unit = {}) {
         Surface(shadowElevation = 4.dp) {
             TopAppBar(
-                title = { Text("Notebookcheck") },
+                title = { Text("Notebookcheck ($itemsCount)") },
                 colors = TopAppBarDefaults.topAppBarColors(),
                 actions = {
                     Row {

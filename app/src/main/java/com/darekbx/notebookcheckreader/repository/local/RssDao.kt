@@ -22,4 +22,13 @@ interface RssDao {
 
     @Query("UPDATE rss_item SET isRead = 1 WHERE id = :uuid")
     suspend fun markAsRead(uuid: String)
+
+    @Query("SELECT COUNT(*) FROM rss_item")
+    fun fetchCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM rss_item")
+    suspend fun fetchCountSync(): Int
+
+    @Query("DELETE FROM rss_item WHERE id IN (SELECT id FROM rss_item ORDER BY timestamp ASC LIMIT :count)")
+    suspend fun deleteOldest(count: Int): Int
 }

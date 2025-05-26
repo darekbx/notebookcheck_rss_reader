@@ -7,6 +7,7 @@ import androidx.room.Room
 import com.darekbx.notebookcheckreader.domain.AddRemoveToFavouritesUseCase
 import com.darekbx.notebookcheckreader.domain.FetchFavouriteItemsUseCase
 import com.darekbx.notebookcheckreader.domain.FetchFavouritesCountUseCase
+import com.darekbx.notebookcheckreader.domain.FetchItemsCountUseCase
 import com.darekbx.notebookcheckreader.domain.FetchRssItemsUseCase
 import com.darekbx.notebookcheckreader.domain.MarkReadItemsUseCase
 import com.darekbx.notebookcheckreader.domain.SynchronizeUseCase
@@ -69,10 +70,11 @@ val domainModule = module {
     single { MarkReadItemsUseCase(get()) }
     single { AddRemoveToFavouritesUseCase(get()) }
     single { FetchFavouritesCountUseCase(get()) }
+    single { FetchItemsCountUseCase(get()) }
 }
 
 val viewModelModule = module {
      viewModel { NewsViewModel(get(), get(), get()) }
-     viewModel { MainViewModel(get(), get()) }
+     viewModel { MainViewModel(get(), get(), get()) }
      viewModel { FavouritesViewModel(get(), get()) }
 }

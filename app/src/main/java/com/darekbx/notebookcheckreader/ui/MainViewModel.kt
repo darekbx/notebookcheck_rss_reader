@@ -3,6 +3,7 @@ package com.darekbx.notebookcheckreader.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darekbx.notebookcheckreader.domain.FetchFavouritesCountUseCase
+import com.darekbx.notebookcheckreader.domain.FetchItemsCountUseCase
 import com.darekbx.notebookcheckreader.domain.SynchronizeUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,13 +18,16 @@ sealed interface MainUiState {
 }
 class MainViewModel(
     private val synchronizeUseCase: SynchronizeUseCase,
-    private val fetchFavouritesCountUseCase: FetchFavouritesCountUseCase
+    private val fetchFavouritesCountUseCase: FetchFavouritesCountUseCase,
+    private val itemsCountUseCase: FetchItemsCountUseCase
 ): ViewModel() {
 
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Idle)
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     fun favouritesCount() = fetchFavouritesCountUseCase()
+
+    fun itemsCount() = itemsCountUseCase()
 
     fun synchronize() {
         viewModelScope.launch {
