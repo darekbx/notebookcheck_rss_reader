@@ -2,6 +2,7 @@ package com.darekbx.notebookcheckreader.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.darekbx.notebookcheckreader.domain.DeleteOldItemsUseCase
 import com.darekbx.notebookcheckreader.domain.FetchFavouritesCountUseCase
 import com.darekbx.notebookcheckreader.domain.FetchItemsCountUseCase
 import com.darekbx.notebookcheckreader.domain.SynchronizeUseCase
@@ -19,6 +20,7 @@ sealed interface MainUiState {
 class MainViewModel(
     private val synchronizeUseCase: SynchronizeUseCase,
     private val fetchFavouritesCountUseCase: FetchFavouritesCountUseCase,
+    private val deleteOldItemsUseCase: DeleteOldItemsUseCase,
     private val itemsCountUseCase: FetchItemsCountUseCase
 ): ViewModel() {
 
@@ -28,6 +30,16 @@ class MainViewModel(
     fun favouritesCount() = fetchFavouritesCountUseCase()
 
     fun itemsCount() = itemsCountUseCase()
+
+    fun deleteOldItems() {
+        viewModelScope.launch {
+            try {
+                deleteOldItemsUseCase()
+            } catch (e: Exception) {
+                _uiState.value = MainUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
 
     fun synchronize() {
         viewModelScope.launch {

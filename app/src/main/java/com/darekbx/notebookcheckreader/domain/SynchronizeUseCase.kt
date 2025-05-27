@@ -3,7 +3,6 @@ package com.darekbx.notebookcheckreader.domain
 import com.darekbx.notebookcheckreader.repository.local.RssDao
 import com.darekbx.notebookcheckreader.repository.remote.RssFetch
 import com.darekbx.notebookcheckreader.repository.toDto
-import kotlin.math.max
 
 class SynchronizeUseCase(
     private val rssFetch: RssFetch,
@@ -33,16 +32,6 @@ class SynchronizeUseCase(
         // 4. Save new items to the database
         rssDao.addAll(newItems.map { it.toDto() })
 
-        // 5. Delete old items if needed
-        val count = rssDao.fetchCountSync()
-        if (count > MAX_ITEMS) {
-            rssDao.deleteOldest(count - MAX_ITEMS)
-        }
-
         return newItems.size
-    }
-
-    companion object {
-        private const val MAX_ITEMS = 250
     }
 }

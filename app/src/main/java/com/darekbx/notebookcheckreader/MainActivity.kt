@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
@@ -73,15 +74,18 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val mainViewModel = koinViewModel<MainViewModel>()
                     val state by mainViewModel.uiState.collectAsStateWithLifecycle()
-                    val favouritesCount by mainViewModel.favouritesCount().collectAsStateWithLifecycle(initialValue = 0)
-                    val itemsCount by mainViewModel.itemsCount().collectAsStateWithLifecycle(initialValue = 0)
+                    val favouritesCount by mainViewModel.favouritesCount()
+                        .collectAsStateWithLifecycle(initialValue = 0)
+                    val itemsCount by mainViewModel.itemsCount()
+                        .collectAsStateWithLifecycle(initialValue = 0)
 
                     Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
                         AppBar(
                             itemsCount = itemsCount,
                             favouritesCount = favouritesCount,
                             onSyncClick = { mainViewModel.synchronize() },
-                            onFavouritesClick = { navController.navigate(FavouritesDestination.route) }
+                            onFavouritesClick = { navController.navigate(FavouritesDestination.route) },
+                            onDeleteClick = { mainViewModel.deleteOldItems() }
                         )
                     }) { innerPadding ->
                         Box(
@@ -118,13 +122,27 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     @OptIn(ExperimentalMaterial3Api::class)
-    private fun AppBar(itemsCount: Int, favouritesCount: Int, onSyncClick: () -> Unit = {}, onFavouritesClick: () -> Unit = {}) {
+    private fun AppBar(
+        itemsCount: Int,
+        favouritesCount: Int,
+        onSyncClick: () -> Unit = {},
+        onFavouritesClick: () -> Unit = {},
+        onDeleteClick: () -> Unit = {}
+    ) {
         Surface(shadowElevation = 4.dp) {
             TopAppBar(
                 title = { Text("Notebookcheck ($itemsCount)") },
                 colors = TopAppBarDefaults.topAppBarColors(),
                 actions = {
                     Row {
+                        Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+                            IconButton(onClick = onDeleteClick) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete"
+                                )
+                            }
+                        }
                         Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
                             IconButton(onClick = onFavouritesClick) {
                                 Icon(

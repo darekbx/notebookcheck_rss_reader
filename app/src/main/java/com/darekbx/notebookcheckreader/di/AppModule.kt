@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.room.Room
 import com.darekbx.notebookcheckreader.domain.AddRemoveToFavouritesUseCase
+import com.darekbx.notebookcheckreader.domain.DeleteOldItemsUseCase
 import com.darekbx.notebookcheckreader.domain.FetchFavouriteItemsUseCase
 import com.darekbx.notebookcheckreader.domain.FetchFavouritesCountUseCase
 import com.darekbx.notebookcheckreader.domain.FetchItemsCountUseCase
@@ -71,10 +72,11 @@ val domainModule = module {
     single { AddRemoveToFavouritesUseCase(get()) }
     single { FetchFavouritesCountUseCase(get()) }
     single { FetchItemsCountUseCase(get()) }
+    single { DeleteOldItemsUseCase(get()) }
 }
 
 val viewModelModule = module {
      viewModel { NewsViewModel(get(), get(), get()) }
-     viewModel { MainViewModel(get(), get(), get()) }
+     viewModel { MainViewModel(get(), get(), get(), get()) }
      viewModel { FavouritesViewModel(get(), get()) }
 }
